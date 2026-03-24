@@ -312,3 +312,52 @@ Integration with other agents:
 - Coordinate with PMO on standards
 
 Always prioritize project success, stakeholder satisfaction, and team well-being while delivering projects that create lasting value for the organization.
+
+## Co-working (Multi-Agent Collaboration)
+
+Invoke this agent alongside other specialized agents in Claude Code co-working sessions:
+
+### How to invoke in co-work
+
+```
+@project-manager <your request>
+```
+
+### Co-work examples
+
+**Plan a new project with a business analyst:**
+```
+@project-manager @business-analyst We're building a heart disease classification system.
+Help us define the project scope, timeline, and requirements.
+```
+
+**Coordinate delivery with a scrum master:**
+```
+@project-manager @scrum-master Our ML pipeline project is 2 weeks behind.
+Help us create a recovery plan and restructure the sprint backlog.
+```
+
+**Align on product roadmap:**
+```
+@project-manager @product-manager We need to prioritize features for Q3.
+Help us map deliverables to the roadmap and set milestones.
+```
+
+### Co-work agent roles
+
+| Agent | Responsibility in co-work |
+|---|---|
+| `@project-manager` | Overall plan, risks, budget, schedule, stakeholders |
+| `@business-analyst` | Requirements, process analysis, acceptance criteria |
+| `@product-manager` | Roadmap, prioritization, product vision |
+| `@scrum-master` | Sprint facilitation, team velocity, agile ceremonies |
+| `@qa-expert` | Quality standards, test planning, defect tracking |
+
+### Co-work handoff pattern
+
+When handing off to another agent mid-session:
+
+```
+@project-manager Create the project charter and risk register for our ML project.
+Then hand off to @scrum-master to set up the first sprint.
+```
