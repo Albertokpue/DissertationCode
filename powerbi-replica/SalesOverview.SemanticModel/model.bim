@@ -1,0 +1,254 @@
+{
+  "name": "SemanticModel",
+  "compatibilityLevel": 1567,
+  "model": {
+    "culture": "en-US",
+    "dataAccessOptions": {
+      "legacyRedirects": true,
+      "returnErrorValuesAsNull": true
+    },
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "en-US",
+    "tables": [
+      {
+        "name": "Sales",
+        "columns": [
+          { "name": "Order ID",      "dataType": "string",   "sourceColumn": "Order ID" },
+          { "name": "Order Date",    "dataType": "dateTime", "sourceColumn": "Order Date", "formatString": "Short Date" },
+          { "name": "Ship Date",     "dataType": "dateTime", "sourceColumn": "Ship Date",  "formatString": "Short Date" },
+          { "name": "Customer ID",   "dataType": "string",   "sourceColumn": "Customer ID" },
+          { "name": "Segment",       "dataType": "string",   "sourceColumn": "Segment" },
+          { "name": "Region",        "dataType": "string",   "sourceColumn": "Region" },
+          { "name": "Category",      "dataType": "string",   "sourceColumn": "Category" },
+          { "name": "Sub-Category",  "dataType": "string",   "sourceColumn": "Sub-Category" },
+          { "name": "Product Name",  "dataType": "string",   "sourceColumn": "Product Name" },
+          { "name": "Quantity",      "dataType": "int64",    "sourceColumn": "Quantity",   "formatString": "0" },
+          { "name": "Discount",      "dataType": "double",   "sourceColumn": "Discount",   "formatString": "0.00%" },
+          { "name": "Sales",         "dataType": "double",   "sourceColumn": "Sales",      "formatString": "\"$\"#,0.00;-\"$\"#,0.00;\"$\"#,0.00" },
+          { "name": "Profit",        "dataType": "double",   "sourceColumn": "Profit",     "formatString": "\"$\"#,0.00;-\"$\"#,0.00;\"$\"#,0.00" }
+        ],
+        "partitions": [
+          {
+            "name": "Sales-Partition",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = Csv.Document(File.Contents(\"..\\data\\superstore_sales.csv\"), [Delimiter=\",\", Columns=13, Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+                "    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),",
+                "    Typed = Table.TransformColumnTypes(Promoted, {",
+                "        {\"Order ID\", type text},",
+                "        {\"Order Date\", type date},",
+                "        {\"Ship Date\", type date},",
+                "        {\"Customer ID\", type text},",
+                "        {\"Segment\", type text},",
+                "        {\"Region\", type text},",
+                "        {\"Category\", type text},",
+                "        {\"Sub-Category\", type text},",
+                "        {\"Product Name\", type text},",
+                "        {\"Quantity\", Int64.Type},",
+                "        {\"Discount\", type number},",
+                "        {\"Sales\", type number},",
+                "        {\"Profit\", type number}",
+                "    })",
+                "in",
+                "    Typed"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Total Sales",
+            "expression": "SUM('Sales'[Sales])",
+            "formatString": "\"$\"#,0;-\"$\"#,0;\"$\"#,0",
+            "displayFolder": "KPIs"
+          },
+          {
+            "name": "Total Profit",
+            "expression": "SUM('Sales'[Profit])",
+            "formatString": "\"$\"#,0;-\"$\"#,0;\"$\"#,0",
+            "displayFolder": "KPIs"
+          },
+          {
+            "name": "Profit Margin %",
+            "expression": "DIVIDE([Total Profit], [Total Sales])",
+            "formatString": "0.00%;-0.00%;0.00%",
+            "displayFolder": "KPIs"
+          },
+          {
+            "name": "Average Order Value",
+            "expression": "DIVIDE([Total Sales], DISTINCTCOUNT('Sales'[Order ID]))",
+            "formatString": "\"$\"#,0.00;-\"$\"#,0.00;\"$\"#,0.00",
+            "displayFolder": "KPIs"
+          },
+          {
+            "name": "Sales YTD",
+            "expression": "TOTALYTD([Total Sales], 'DateTable'[Date])",
+            "formatString": "\"$\"#,0;-\"$\"#,0;\"$\"#,0",
+            "displayFolder": "Time Intelligence"
+          },
+          {
+            "name": "Sales LY",
+            "expression": "CALCULATE([Total Sales], SAMEPERIODLASTYEAR('DateTable'[Date]))",
+            "formatString": "\"$\"#,0;-\"$\"#,0;\"$\"#,0",
+            "displayFolder": "Time Intelligence"
+          },
+          {
+            "name": "Sales LY YTD",
+            "expression": "TOTALYTD([Sales LY], 'DateTable'[Date])",
+            "formatString": "\"$\"#,0;-\"$\"#,0;\"$\"#,0",
+            "displayFolder": "Time Intelligence"
+          },
+          {
+            "name": "Projected Sales",
+            "expression": "[Total Sales] * (1 + SELECTEDVALUE('Growth Rate %'[Growth Rate % Value], 0))",
+            "formatString": "\"$\"#,0;-\"$\"#,0;\"$\"#,0",
+            "displayFolder": "What-If"
+          },
+          {
+            "name": "Projected Profit",
+            "expression": "[Total Profit] * (1 + SELECTEDVALUE('Growth Rate %'[Growth Rate % Value], 0))",
+            "formatString": "\"$\"#,0;-\"$\"#,0;\"$\"#,0",
+            "displayFolder": "What-If"
+          },
+          {
+            "name": "Product Sales Rank",
+            "expression": "RANKX(ALL('Sales'[Product Name]), [Total Sales],, DESC, Dense)",
+            "formatString": "0",
+            "displayFolder": "Product Analytics"
+          },
+          {
+            "name": "ABC Classification",
+            "expression": [
+              "VAR _ProductSales = [Total Sales]",
+              "VAR _AllProductSales =",
+              "    ADDCOLUMNS(",
+              "        ALL('Sales'[Product Name]),",
+              "        \"@Sales\", [Total Sales]",
+              "    )",
+              "VAR _GrandTotal = SUMX(_AllProductSales, [@Sales])",
+              "VAR _Ranked =",
+              "    ADDCOLUMNS(",
+              "        _AllProductSales,",
+              "        \"@Rank\", RANKX(_AllProductSales, [@Sales],, DESC, Dense)",
+              "    )",
+              "VAR _Cumulative =",
+              "    SUMX(",
+              "        FILTER(",
+              "            _Ranked,",
+              "            [@Sales] >= _ProductSales",
+              "        ),",
+              "        [@Sales]",
+              "    )",
+              "VAR _Share = DIVIDE(_Cumulative, _GrandTotal)",
+              "RETURN",
+              "    SWITCH(",
+              "        TRUE(),",
+              "        _Share <= 0.20, \"A - Top 20%\",",
+              "        _Share <= 0.50, \"B - Next 30%\",",
+              "        \"C - Bottom 50%\"",
+              "    )"
+            ],
+            "displayFolder": "Product Analytics"
+          }
+        ]
+      },
+      {
+        "name": "DateTable",
+        "columns": [
+          { "name": "Date",         "dataType": "dateTime", "sourceColumn": "[Date]",         "formatString": "Short Date", "isNameInferred": false, "type": "calculatedTableColumn" },
+          { "name": "Year",         "dataType": "int64",    "sourceColumn": "[Year]",         "formatString": "0",          "isNameInferred": false, "type": "calculatedTableColumn" },
+          { "name": "Month Number", "dataType": "int64",    "sourceColumn": "[Month Number]", "formatString": "0",          "isNameInferred": false, "type": "calculatedTableColumn" },
+          { "name": "Month",        "dataType": "string",   "sourceColumn": "[Month]",                                       "isNameInferred": false, "type": "calculatedTableColumn", "sortByColumn": "Month Number" },
+          { "name": "Quarter",      "dataType": "string",   "sourceColumn": "[Quarter]",                                     "isNameInferred": false, "type": "calculatedTableColumn" },
+          { "name": "Year-Month",   "dataType": "string",   "sourceColumn": "[Year-Month]",                                  "isNameInferred": false, "type": "calculatedTableColumn" }
+        ],
+        "partitions": [
+          {
+            "name": "DateTable-Partition",
+            "mode": "import",
+            "source": {
+              "type": "calculated",
+              "expression": [
+                "ADDCOLUMNS(",
+                "    CALENDAR(DATE(2023, 1, 1), DATE(2024, 12, 31)),",
+                "    \"Year\", YEAR([Date]),",
+                "    \"Month Number\", MONTH([Date]),",
+                "    \"Month\", FORMAT([Date], \"MMMM\"),",
+                "    \"Quarter\", \"Q\" & FORMAT([Date], \"Q\"),",
+                "    \"Year-Month\", FORMAT([Date], \"YYYY-MM\")",
+                ")"
+              ]
+            }
+          }
+        ],
+        "annotations": [
+          { "name": "PBI_Id", "value": "DateTable" }
+        ]
+      },
+      {
+        "name": "Growth Rate %",
+        "columns": [
+          {
+            "name": "Growth Rate %",
+            "dataType": "double",
+            "sourceColumn": "[Growth Rate %]",
+            "formatString": "0.00%;-0.00%;0.00%",
+            "isNameInferred": false,
+            "type": "calculatedTableColumn"
+          },
+          {
+            "name": "Growth Rate % Value",
+            "dataType": "double",
+            "sourceColumn": "[Growth Rate % Value]",
+            "formatString": "0.00%;-0.00%;0.00%",
+            "isNameInferred": false,
+            "type": "calculatedTableColumn"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Growth-Partition",
+            "mode": "import",
+            "source": {
+              "type": "calculated",
+              "expression": [
+                "SELECTCOLUMNS(",
+                "    GENERATESERIES(-0.20, 0.50, 0.01),",
+                "    \"Growth Rate %\", [Value],",
+                "    \"Growth Rate % Value\", [Value]",
+                ")"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Growth Rate % Selected",
+            "expression": "SELECTEDVALUE('Growth Rate %'[Growth Rate % Value], 0)",
+            "formatString": "0.00%;-0.00%;0.00%"
+          }
+        ],
+        "annotations": [
+          { "name": "PBI_ParameterTable", "value": "true" }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "Sales-Date",
+        "fromTable": "Sales",
+        "fromColumn": "Order Date",
+        "toTable": "DateTable",
+        "toColumn": "Date",
+        "crossFilteringBehavior": "oneDirection"
+      }
+    ],
+    "annotations": [
+      { "name": "PBI_QueryOrder", "value": "[\"Sales\"]" },
+      { "name": "PBIDesktopVersion", "value": "2.130.0" }
+    ]
+  }
+}
